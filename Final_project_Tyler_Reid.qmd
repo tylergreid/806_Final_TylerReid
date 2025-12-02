@@ -1,0 +1,160 @@
+---
+title: "Influence of Planting Density and Nitrogen Fertilization on Buckwheat Performance"
+author: "Tyler Reid"
+format:
+  pdf:
+    pdf-engine: xelatex
+    mainfont: "Times New Roman"
+    sansfont: "Times New Roman"
+    monofont: "Times New Roman"
+    mathfont: "Times New Roman"
+editor_options:
+  chunk_output_type: console
+bibliography: references.bib
+csl: "C:/Users/tyler/Zotero/styles/apa.csl"
+---
+
+```{r Packages, include=FALSE}
+library(readxl)
+library(tidyverse)
+library(gridExtra)
+```
+
+```{r Biomass, include=FALSE}
+Biomass <- read_excel("C:/Users/tyler/OneDrive/Education/UNH/Analyses/Biomass/Biomass_combined.xlsx")
+
+Biomass <- Biomass %>%
+    mutate(Total_g = BW_g + Weeds_g,
+           Weeds_perc = (Weeds_g/Total_g)*100) %>% 
+    filter(Density != "zero") %>% 
+    mutate(Variety = as.factor(Variety), 
+           Density = as.factor(Density), 
+           N_level = as.factor(N_level),
+           Block = as.factor(Block),
+           Date = as.factor(Date))
+
+Biomass$Density <- factor(Biomass$Density, levels = c("zero", "lo", "med", "hi")) #changes levels order
+
+Biomass_harvest <- Biomass %>% 
+  filter(Date == "2025-09-01")
+
+biomass_median <- Biomass_harvest %>% 
+  group_by(Density, N_level) %>% 
+  summarize(median_weeds = median(Weeds_g))
+```
+
+```{r Lodging, include=FALSE}
+Lodging <- read_excel("C:/Users/tyler/OneDrive/Education/UNH/Analyses/Biomass/Lodging.xlsx")
+
+Lodging <- Lodging %>% 
+  drop_na() %>% 
+  rename(Lodging = 'Lodging_Scale(0-3)') %>% 
+  mutate(Density = as.factor(Density), 
+           N_Level = as.factor(N_Level))
+
+Lodging <- Lodging %>% 
+  filter(Density != 'zero') %>%
+  group_by(Lodging, Density, N_Level) %>% 
+  summarize(count = n())
+
+Lodging$Density <- factor(Lodging$Density, levels = c("zero", "lo", "med", "hi")) #changes levels order
+```
+
+```{r Yield, include=FALSE}
+Yield <- read_excel("C:/Users/tyler/OneDrive/Education/UNH/Analyses/Yield/UNH_Buckwheat_2025_Raw_Plot_yield.xlsx")
+
+Yield <- Yield %>% 
+  select(-Notes, -Written_on_bag, - Moisture_percentage) %>% 
+  drop_na() %>% 
+  mutate(Variety = as.factor(Variety), 
+           Density = as.factor(Density), 
+           N_level = as.factor(N_level),
+           Block = as.factor(Block),
+         Yield_kg_ha = Yield_g*1.03)
+
+Yield$Density <- factor(Yield$Density, levels = c("zero", "lo", "med", "hi"))
+
+Yield_median <- Yield %>% 
+  group_by(Density, N_level) %>% 
+  summarize(median = median(Yield_g))
+```
+
+## Github Repository Link: 
+
+# Introduction
+
+Buckwheat is an underutilized crop in the United States. It has much agronomic, ecological, and nutritional value to add to food systems. Buckwheat's incorporation into agricultural systems would contribute to crop diversity, which has been shown to increase crop yield in corn [@smith2008]. Nutritionally, buckwheat is a good source of fiber, protein, vitamins, minerals, and antioxidants [@christa2008]. To better understand buckwheat's performance and support its incorporation into more food systems, this study aims to evaluate how the management practices of planting density and nitrogen fertilization affect buckwheat's yield, weed-suppression capabilities, and lodging susceptibility.
+
+Planting density and fertilization are common management practices in agriculture. A previous study on common buckwheat showed that both fertilization and planting density were correlated with yield [@fang2018]. Fang et. al's study found that yield increased when going from low to medium fertilization rates and planting densities. However, in the same study, it was seen that past a certain point, increases in fertilization and density actually decreased yield. So, there appears to be optimal management levels for maximizing buckwheat's yield.
+
+In addition to yield, other relevant performance metrics for buckwheat are lodging susceptibility and weed suppression. Lodging occurs when plants fall over. It normally occurs as the result of plants being too heavy or having weak stems, and it drastically reduces buckwheat's yield. Additionally, weed suppression is of importance because it is one of the premier ecosystem services buckwheat provides as a cover crop.
+
+# Methods
+
+The experiment followed a split plot randomized complete block design (RCBD) with four replicates (Figure 1). Three varieties of common buckwheat (*F. esculentum*) and one variety of Tartary buckwheat (*F. tataricum*) was grown. Varieties were assigned as main plots, and each variety was subjected to combinations of plant density and nitrogen treatments as subplots. The planting density treatments included zero, low (750,000 plants/ha), medium (1,500,000 plants/ha), and high (2,225,000 plants/ha). The nitrogen treatments consisted of 0 and 45 kg N/ha.
+
+The yield of each plot was weighed using a scale. For weed mass, the weeds within a randomly chosen 0.25 m^2^ section from each plot were harvested and weighed. Lodging was qualitatively assessed for each plot at harvest using a scale from 0-3 (0: none, 1: minor, 2: moderate, 3: severe).
+
+To evaluate the effect planting density had on both yield and weed biomass, boxplots were created. For statistical analyses, ANOVA tests were conducted, followed by post-hoc Tukey HSD tests. To evaluate the effect the nitrogen treatments had on both yield and weed biomass, linear models were created. Data were cleaned, manipulated, and visualized using tidyverse and gridExtra packages in R. Models and tests were run using the base R functions aov, lm, and TukeyHSD.
+
+```{r, fig.cap="Field Plot", echo=FALSE}
+knitr::include_graphics("C:/Users/tyler/OneDrive/Desktop/Plot_map.png")
+```
+
+# Results
+
+Figure 2 shows that median yield is positively correlated with planting density but nitrogen level does not have a clear correlation. The median yield of the 0 kg N/ha plots from low to high are 987, 1,260, and 1,301 grams, respectively. The median yield of the 45 kg N/ha plots from low to high are 891, 1,167, and 1,324 grams. The Tukey test evaluating planting density’s effect on yield revealed that compared to low density, medium density increased yield by 286.16 g (p \< 0.05) and high density increased yield by 349.61 g (p \< 0.01) (Figure 3). The yields between the medium and high density did not differ significantly.
+
+```{r yield_plot, fig.cap = "Plot Yield by Density and Nitrogen Treatments", fig.height=4, echo=FALSE}
+ggplot(data = Yield, aes(x = Density, y = Yield_g, fill = N_level)) +
+  geom_boxplot() +
+  theme_light() +
+  labs(y = "Yield (kg/ha)",
+       fill = "N (kg/ha)")
+```
+
+```{r, fig.cap = "Yield by Density: Tukey HSD Results", fig.height=1, echo=FALSE}
+Yield_density_aov <- aov(Yield_g ~ Density, data = Yield)
+Yield_density_tukey <- TukeyHSD(Yield_density_aov)
+yield_tbl <- as.data.frame(Yield_density_tukey$Density)
+tt <- ttheme_default(base_size = 8)  # default is 12
+grid.table(yield_tbl, theme = tt)
+```
+
+The plot showing the weed biomass differences across densities and fertilization levels reveals a clear trend of decreasing weed mass with increasing planting densitity, but there is no visible trend between weed biomass and fertilization (Figure 4). The median weed mass of the 0 kg N/ha plots from low to high are 37.2, 23.2, and 14.4 grams, respectively. The median weed mass of the 45 kg N/ha plots from low to high are 42.9, 21.5, and 8.4 grams, respectively. The Tukey test evaluating planting density’s effect on weed mass revealed that compared to low density, medium density decreased weed mass by 17.24g (p \< 0.001) and high density decreased weed mass by 26.48g (p \< 0.001) (Figure 5). This test also found that compared to medium density, high density decreased weed mass by 9.23g (p \< 0.001).
+
+```{r, fig.cap = "Weed Mass by Density and Nitrogen Treatments", fig.height=4, echo=FALSE}
+ggplot(data = Biomass_harvest, aes(x = Density, y = Weeds_g, fill = N_level)) +
+  geom_boxplot() +
+  theme_bw() +
+  labs(y = "Dry weight (g)",
+       fill = "N (kg/ha)")
+```
+
+```{r, fig.cap="Weed Mass by Density: Tukey HSD Results", fig.height=1, echo=FALSE}
+Weeds_density_aov <- aov(Weeds_g ~ Density, data = Biomass_harvest)
+Weeds_density_tukey <- TukeyHSD(Weeds_density_aov)
+weeds_tbl <- as.data.frame(Weeds_density_tukey$Density)
+grid.table(weeds_tbl, theme = tt)
+```
+
+A linear model revealed that yield did not differ between the two nitrogen levels (p = 0.73). Also, a linear model found that weed mass did not differ between the two nitrogen levels (p = 0.56). When looking at lodging differences across nitrogen levels, it can be seen that 14 0 kg N/ha plots experienced lodging while 20 44 kg N/ha plots experienced lodging (Figure 5). Only one 0 kg N/ha plot experienced severe lodging while 7 45 kg N/ha plots experienced severe lodging. When looking at lodging differences across densities, the number of plots that experienced lodging for low, medium, and high densities were 4, 10, and 18, respectively. Severe lodging counts, indicated by a 3 on the scale, for low, medium, and high densities were 0, 3, and 5 respectively.
+
+```{r, fig.cap="Plot Count by Lodging Scale Across Density and Nitrogen Treatments", echo=FALSE}
+ggplot(data = Lodging, aes(x = Lodging, y = count, fill = Density)) +
+  geom_bar(stat = 'identity') +
+  theme_light() +
+  facet_wrap(~N_Level) +
+  labs(y = 'Plot count',
+       x = 'Lodging scale')
+```
+
+# Discussion
+
+Yield was shown to increase significantly from low to high planting densities, indicating that plants in the higher density were able to effectively produce seeds without becoming hindered by the increased competition. Nitrogen fertilization, though, did not produce any significant differences in yield across the densities, indicating that fertilization may be unnecessary for use on buckwheat. These findings are partly consistent with the previously-mentioned study by Fang et al. as yield increased positively with planting density, but there was not a point where the positive correlation ceased. Regarding nitrogen fertilization, the results of this study were not consistent with Fang et al's study since there was not a positive correlation seen between yield and nitrogen fertilization.
+
+Weed biomass was shown to differ significantly across all three densities, decreasing from low to medium to high. This result suggests that the greater planting densities allowed the buckwheat to more effectively outcompete the weeds. This finding is consistent with expectation as a greater number of plants allows the buckwheat to better capture soil nutrients and sunlight. Lodging, both overall and severe, occurred more frequently in the 45 kg N/ha plots and in the medium and high densities. This suggests that the increased plant biomass from fertilization caused the plants to be heavier and more prone to falling over. Regarding density, this result suggests that the greater spacing of plants in the low-density plots reduces the amount that the plants lean on each other.
+
+These overall results demonstrate that planting density strongly influences buckwheat's yield, weed-suppression capability, and lodging susceptibility. The findings also suggest that nitrogen fertilization increases buckwheat's lodging susceptibility, but it does not have a significant impact on yield or weed suppression.
+
+# References
